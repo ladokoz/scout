@@ -2,8 +2,6 @@
 
 **Ahub Film Scout** is an elegant, high-performance scouting engine designed for cinematic discovery. It performs deep, parallel sweeps across YouTube and Vimeo, synthesizing results into a unified, verified dashboard.
 
-![Ahub Film Scout Dashboard](https://via.placeholder.com/1200x600/0b0e14/8b5cf6?text=Ahub+Film+Scout+Dashboard)
-
 ## ✨ Core Features
 
 *   **Deep Scouting Resilience**: Uses a multi-layered search strategy to find "hard-to-reach" films, even when they have restricted metadata or special characters in the title.
