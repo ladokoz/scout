@@ -1,1 +1,63 @@
-# scout
+# 🎬 Ahub Film Scout
+
+**Ahub Film Scout** is an elegant, high-performance scouting engine designed for cinematic discovery. It performs deep, parallel sweeps across YouTube and Vimeo, synthesizing results into a unified, verified dashboard.
+
+![Ahub Film Scout Dashboard](https://via.placeholder.com/1200x600/0b0e14/8b5cf6?text=Ahub+Film+Scout+Dashboard)
+
+## ✨ Core Features
+
+*   **Deep Scouting Resilience**: Uses a multi-layered search strategy to find "hard-to-reach" films, even when they have restricted metadata or special characters in the title.
+*   **Expert Relevance Engine**: Toggle between **Strict**, **Balanced**, and **Loose** matching algorithms to fine-tune your results in real-time.
+*   **The Cinematic Dashboard**: A premium, dark-mode workspace featuring 180px thumbnails, instant SVG placeholders, and smooth CSS transitions.
+*   **Intelligent Deduplication**: Automatically collapses mobile, desktop, and regional links into a single verified entry.
+*   **Advanced Discovery Filters**:
+    *   **Min Relevance**: Instant noise reduction.
+    *   **Duration Control**: Hide teasers/trailers while keeping full shorts.
+    *   **Visual Logic**: Hide results without previews based on match confidence.
+*   **Batch Processing**: Run hundreds of search queries in the background and export the results to CSV.
+
+## 🛠️ Technology Stack
+
+*   **Backend**: Python 3.9+, FastAPI (Asynchronous API), Uvicorn.
+*   **Engines**: YouTube API v3, Vimeo API (Client Credentials), DuckDuckGo Deep Scouting.
+*   **Logic**: `thefuzz` (Fuzzy string matching), `yt-dlp` (Metadata enrichment).
+*   **Frontend**: Vanilla HTML5, CSS3 (Modern Grid/Flexbox), JavaScript (Native ES6+).
+
+## 🚀 Quick Start
+
+### 1. Prerequisites
+*   Python 3.9 or higher.
+*   YouTube Data API v3 Key.
+*   Vimeo API ClientID/Secret.
+
+### 2. Local Setup
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/ahub-film-scout.git
+cd ahub-film-scout
+
+# Launch using the automated script
+# (On Windows)
+./run.bat
+
+# (On Linux/Debian)
+chmod +x run.sh
+./run.sh
+```
+
+### 3. Configuration
+Create a `.env` file in the root directory and add your keys:
+```env
+YOUTUBE_API_KEY=your_youtube_key
+VIMEO_CLIENT_ID=your_vimeo_id
+VIMEO_CLIENT_SECRET=your_vimeo_secret
+```
+
+## 🌍 Deployment
+The project is optimized for headless Debian/Ubuntu servers. For a detailed guide on Proxmox LXC and Cloudflare Tunnel integration, see [README_DEPLOY.md](README_DEPLOY.md).
+
+## 📜 License
+This project is licensed under the MIT License.
+
+---
+*Built with passion for cinematic discovery.*
