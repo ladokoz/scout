@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ahub Film Scout | Discover & Verify</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>Ahub Film Scout</h1>
+                <p style="color: var(--text-dim);">Elegant Parallel Discovery & AI Verification</p>
+            </div>
+            <div id="api-status"></div>
+        </header>
+
+        <aside class="sidebar">
+            <section class="card">
+                <h3 style="margin-bottom: 1.5rem; font-size: 1rem;">Discovery Filters</h3>
+                
+                <!-- Global Match Pool -->
+                <div class="filter-group">
+                    <label class="filter-label">
+                        Min relevance
+                        <span id="label-min-relevance" class="filter-val">20%</span>
+                    </label>
+                    <input type="range" id="filter-min-relevance" min="0" max="100" value="20">
+                </div>
+
+                <!-- Breadth -->
+                <div class="filter-group">
+                    <label class="filter-label">Search Breadth</label>
+                    <input type="number" id="setting-search-limit" min="1" max="50" value="15">
+                    <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: 0.25rem;">Max results per engine sweep</p>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0;">
+
+                <!-- Duration Logic -->
+                <div class="filter-group">
+                    <div class="toggle-container">
+                        <span style="font-size: 0.85rem; font-weight: 600;">Hide Short Videos</span>
+                        <input type="checkbox" id="filter-hide-short">
+                    </div>
+                    <div id="short-video-controls" style="opacity: 0.5; pointer-events: none;">
+                        <label class="filter-label" style="font-size: 0.75rem; margin-top: 0.5rem;">
+                            Under X seconds
+                            <span id="label-short-duration" class="filter-val">60s</span>
+                        </label>
+                        <input type="range" id="filter-short-duration" min="10" max="300" value="60">
+                        
+                        <label class="filter-label" style="font-size: 0.75rem; margin-top: 0.5rem;">
+                            Unless score >
+                            <span id="label-short-override" class="filter-val">20%</span>
+                        </label>
+                        <input type="range" id="filter-short-override" min="0" max="100" value="20">
+                    </div>
+                </div>
+
+                <!-- Visual Logic -->
+                <div class="filter-group">
+                    <div class="toggle-container">
+                        <span style="font-size: 0.85rem; font-weight: 600;">Hide No Thumbnails</span>
+                        <input type="checkbox" id="filter-hide-no-thumb">
+                    </div>
+                    <div id="no-thumb-controls" style="opacity: 0.5; pointer-events: none;">
+                        <label class="filter-label" style="font-size: 0.75rem; margin-top: 0.5rem;">
+                            Unless score >
+                            <span id="label-thumb-override" class="filter-val">20%</span>
+                        </label>
+                        <input type="range" id="filter-thumb-override" min="0" max="100" value="20">
+                    </div>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0;">
+
+                <!-- Expert Controls -->
+                <div class="filter-group">
+                    <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.75rem;">Expert Mode</h4>
+                    <label class="filter-label">Match Algorithm</label>
+                    <select id="setting-match-algo" style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.5rem; color: var(--text-main); font-size: 0.85rem; outline: none; cursor: pointer;">
+                        <option value="strict">Strict (Ratio)</option>
+                        <option value="balanced">Balanced (Token Sort)</option>
+                        <option value="loose" selected>Loose (Token Set)</option>
+                    </select>
+                    <p style="font-size: 0.65rem; color: var(--text-dim); margin-top: 0.5rem;">"Balanced" is best for most searches.</p>
+                </div>
+
+                <button id="reset-filters-btn" class="btn" style="width: 100%; padding: 0.75rem; font-size: 0.8rem; margin-top: 1rem; background: var(--border);">
+                    🔄 Reset Defaults
+                </button>
+            </section>
+        </aside>
+
+        <main class="main-content">
+            <section class="card input-section">
+                <label for="film-list">Enter Search Queries (One per line)</label>
+                <textarea id="film-list" placeholder="Sintel (2010) Blender Foundation&#10;Big Buck Bunny animated short&#10;Piper Pixar official"></textarea>
+                
+                <div style="margin-top: 1.5rem; display: flex; gap: 1rem; align-items: center;">
+                    <button id="start-btn" class="btn">
+                        <span>🚀</span> Start Scouting Batch
+                    </button>
+                    <div id="job-id-display" class="status-text"></div>
+                </div>
+
+                <div id="progress-container" class="progress-section">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span id="status-text" class="status-text">Ready to scout...</span>
+                        <span id="percent-text" class="status-text">0%</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card results-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 style="font-size: 1.25rem;">Discovered Links</h2>
+                    <button id="export-btn" class="btn" style="padding: 0.5rem 1rem; font-size: 0.85rem;" disabled>
+                        📥 Export CSV
+                    </button>
+                </div>
+                
+                <div id="results-container">
+                    <div class="empty-state">
+                        No results yet. Enter a list above to start discovering.
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
