@@ -1,4 +1,4 @@
-from fastapi import FastAPI, BackgroundTasks, HTTPException, Depends, status
+from fastapi import FastAPI, APIRouter, BackgroundTasks, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -24,9 +24,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ScoutMain")
 
 # Security Setup
-security = HTTPBasic()
+security = HTTPBasic(auto_error=False)
 
-def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
+def authenticate(credentials: Optional[HTTPBasicCredentials] = Depends(security)):
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required"
+        )
+        
     correct_username = os.getenv("SCOUT_USER", "maros")
     correct_password = os.getenv("SCOUT_PASS", "ahub123")
     
@@ -36,8 +42,7 @@ def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
     if not (is_user_ok and is_pass_ok):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Basic"},
+            detail="Incorrect username or password"
         )
     return credentials.username
 
@@ -72,10 +77,9 @@ async def lifespan(app: FastAPI):
     # Shutdown: (Optional cleanup)
     pass
 
-# Initialize App with Global Authentication & New Lifespan Logic
+# Initialize App
 app = FastAPI(
     title="Ahub Film Scout API",
-    dependencies=[Depends(authenticate)],
     lifespan=lifespan
 )
 
@@ -86,6 +90,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Create API Router with Authentication
+api_router = APIRouter(prefix="/api", dependencies=[Depends(authenticate)])
 
 class BatchRequest(BaseModel):
     queries: List[str]
@@ -123,7 +130,7 @@ async def run_batch_scout(job_id: str, queries: List[str], search_limit: int, ma
     jobs[job_id]["progress"] = "All searches completed."
     save_state()
 
-@app.post("/api/scout/batch")
+@api_router.post("/scout/batch")
 async def start_batch(request: BatchRequest, background_tasks: BackgroundTasks):
     job_id = str(uuid.uuid4())
     jobs[job_id] = {
@@ -138,7 +145,7 @@ async def start_batch(request: BatchRequest, background_tasks: BackgroundTasks):
     background_tasks.add_task(run_batch_scout, job_id, request.queries, request.search_limit, request.match_algo)
     return {"job_id": job_id}
 
-@app.get("/api/version")
+@api_router.get("/version")
 async def get_version():
     try:
         with open("VERSION", "r") as f:
@@ -146,7 +153,7 @@ async def get_version():
     except:
         return {"version": "1.0.0"}
 
-@app.post("/api/update")
+@api_router.post("/update")
 async def perform_update():
     try:
         # Run git pull using absolute path
@@ -158,13 +165,13 @@ async def perform_update():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@app.get("/api/scout/status/{job_id}")
+@api_router.get("/scout/status/{job_id}")
 async def get_status(job_id: str):
     if job_id not in jobs:
         raise HTTPException(status_code=404, detail="Job not found")
     return jobs[job_id]
 
-@app.post("/api/scout/stop/{job_id}")
+@api_router.post("/scout/stop/{job_id}")
 async def stop_job(job_id: str):
     if job_id in jobs:
         jobs[job_id]["status"] = "stopped"
@@ -173,9 +180,7 @@ async def stop_job(job_id: str):
         return {"status": "stopped"}
     raise HTTPException(status_code=404, detail="Job not found")
 
-# --- Export Management Endpoints ---
-
-@app.post("/api/exports/save")
+@api_router.post("/exports/save")
 async def save_export(request: SaveExportRequest):
     try:
         # Ensure filename is safe
@@ -191,7 +196,7 @@ async def save_export(request: SaveExportRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/exports")
+@api_router.get("/exports")
 async def list_exports():
     if not os.path.exists(EXPORTS_DIR):
         return []
@@ -211,14 +216,14 @@ async def list_exports():
     files.sort(key=lambda x: x["created"], reverse=True)
     return files
 
-@app.get("/api/exports/download/{filename}")
+@api_router.get("/exports/download/{filename}")
 async def download_export(filename: str):
     file_path = os.path.join(EXPORTS_DIR, filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(file_path, media_type='text/csv', filename=filename)
 
-@app.delete("/api/exports/{filename}")
+@api_router.delete("/exports/{filename}")
 async def delete_export(filename: str):
     file_path = os.path.join(EXPORTS_DIR, filename)
     if os.path.exists(file_path):
@@ -226,7 +231,7 @@ async def delete_export(filename: str):
         return {"status": "deleted"}
     raise HTTPException(status_code=404, detail="File not found")
 
-@app.delete("/api/exports-all")
+@api_router.delete("/exports-all")
 async def delete_all_exports():
     try:
         for filename in os.listdir(EXPORTS_DIR):
@@ -237,6 +242,10 @@ async def delete_all_exports():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Include API Router
+app.include_router(api_router)
+
+# Public routes (Frontend)
 @app.get("/")
 async def read_index():
     return FileResponse('frontend/index.html')

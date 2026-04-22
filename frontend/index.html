@@ -182,6 +182,51 @@
         </div>
     </div>
 
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="login-modal-content card">
+            <h2 style="margin-bottom: 1.5rem; text-align: center;">System Access</h2>
+            <p style="color: var(--text-dim); text-align: center; margin-bottom: 2rem; font-size: 0.9rem;">Please enter your credentials to access the scout system.</p>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" class="form-input" required placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-input" required placeholder="Enter password">
+                </div>
+                <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">
+                    Unlock System
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Universal Alert Modal -->
+    <div id="alert-modal" class="modal">
+        <div class="alert-modal-content card">
+            <h3 id="alert-title" style="margin-bottom: 1rem;">Notification</h3>
+            <p id="alert-message" style="color: var(--text-dim); line-height: 1.6;"></p>
+            <div class="modal-actions">
+                <button id="alert-ok-btn" class="btn" style="min-width: 120px;">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Universal Confirm Modal -->
+    <div id="confirm-modal" class="modal">
+        <div class="alert-modal-content card">
+            <h3 id="confirm-title" style="margin-bottom: 1rem;">Are you sure?</h3>
+            <p id="confirm-message" style="color: var(--text-dim); line-height: 1.6;"></p>
+            <div class="modal-actions">
+                <button id="confirm-cancel-btn" class="btn btn-secondary">Cancel</button>
+                <button id="confirm-yes-btn" class="btn btn-danger" style="min-width: 120px;">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>

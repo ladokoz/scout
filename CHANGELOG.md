@@ -2,6 +2,17 @@
 
 All notable changes to the **Ahub Film Scout** project will be documented in this file.
 
+## [1.2.2] - 2026-04-22
+
+### Added
+- **Integrated Login Modal**: Replaced native browser login popups with a premium in-page modal for a seamless discovery experience.
+- **Universal Dialog System**: Replaced all native `alert()` and `confirm()` dialogs with custom-designed, non-intrusive modals that match the app's dark-mode aesthetics.
+- **Basic Auth Persistence**: Implemented `localStorage` caching for system credentials to maintain session persistence across page refreshes.
+
+### Improved
+- **Security Architecture Refactor**: Transitioned the backend to use an `APIRouter` for protected endpoints while keeping the frontend static assets public, allowing the custom login modal to load reliably.
+- **Native Popup Prevention**: Configured the server to suppress the `WWW-Authenticate` header, preventing browser interference with the custom auth flow.
+
 ## [1.2.1] - 2026-04-22
 
 ### Added

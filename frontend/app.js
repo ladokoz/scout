@@ -17,6 +17,19 @@ const progressContainer = document.getElementById("progress-container");
 const progressFill = document.getElementById("progress-fill");
 const percentText = document.getElementById("percent-text");
 
+// New Modals
+const loginModal = document.getElementById("login-modal");
+const loginForm = document.getElementById("login-form");
+const alertModal = document.getElementById("alert-modal");
+const alertTitle = document.getElementById("alert-title");
+const alertMessage = document.getElementById("alert-message");
+const alertOkBtn = document.getElementById("alert-ok-btn");
+const confirmModal = document.getElementById("confirm-modal");
+const confirmTitle = document.getElementById("confirm-title");
+const confirmMessage = document.getElementById("confirm-message");
+const confirmYesBtn = document.getElementById("confirm-yes-btn");
+const confirmCancelBtn = document.getElementById("confirm-cancel-btn");
+
 // Filter Elements
 const filterMinRelevance = document.getElementById("filter-min-relevance");
 const settingSearchLimit = document.getElementById("setting-search-limit");
@@ -58,6 +71,70 @@ const updateStatus = document.getElementById("update-status");
 
 let localVersion = "1.0.0";
 const REMOTE_VERSION_URL = "https://raw.githubusercontent.com/ladokoz/scout/main/VERSION";
+
+// --- UI Utilities ---
+
+function showAlert(message, title = "Notification") {
+    alertTitle.innerText = title;
+    alertMessage.innerText = message;
+    alertModal.classList.add("active");
+    return new Promise(resolve => {
+        alertOkBtn.onclick = () => {
+            alertModal.classList.remove("active");
+            resolve();
+        };
+    });
+}
+
+function showConfirm(message, title = "Are you sure?") {
+    confirmTitle.innerText = title;
+    confirmMessage.innerText = message;
+    confirmModal.classList.add("active");
+    return new Promise(resolve => {
+        confirmYesBtn.onclick = () => {
+            confirmModal.classList.remove("active");
+            resolve(true);
+        };
+        confirmCancelBtn.onclick = () => {
+            confirmModal.classList.remove("active");
+            resolve(false);
+        };
+    });
+}
+
+// --- Authentication & Fetch Wrapper ---
+
+function getAuthHeader() {
+    const auth = localStorage.getItem("scout_auth");
+    return auth ? { "Authorization": `Basic ${auth}` } : {};
+}
+
+async function apiFetch(url, options = {}) {
+    const headers = { ...options.headers, ...getAuthHeader() };
+    const response = await fetch(url, { ...options, headers });
+    
+    if (response.status === 401) {
+        showLoginModal();
+        throw new Error("Unauthorized");
+    }
+    
+    return response;
+}
+
+function showLoginModal() {
+    loginModal.classList.add("active");
+}
+
+loginForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const user = document.getElementById("username").value;
+    const pass = document.getElementById("password").value;
+    const auth = btoa(`${user}:${pass}`);
+    localStorage.setItem("scout_auth", auth);
+    loginModal.classList.remove("active");
+    // Retry previous action or just refresh
+    window.location.reload();
+});
 
 // --- Initialization & LocalStorage ---
 
@@ -219,7 +296,7 @@ resetFiltersBtn.addEventListener("click", () => {
 
 startBtn.addEventListener("click", async () => {
     const text = filmList.value.trim();
-    if (!text) return alert("Please enter at least one search query.");
+    if (!text) return showAlert("Please enter at least one search query.", "Input Required");
 
     const queries = text.split("\n").map(line => line.trim()).filter(line => line.length > 0);
 
@@ -234,7 +311,7 @@ startBtn.addEventListener("click", async () => {
     resultsContainer.innerHTML = ''; // Clear everything for new batch
 
     try {
-        const response = await fetch(`${API_BASE}/scout/batch`, {
+        const response = await apiFetch(`${API_BASE}/scout/batch`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
@@ -267,7 +344,9 @@ startBtn.addEventListener("click", async () => {
         }
     } catch (err) {
         console.error(err);
-        alert(`Failed to start scouting: ${err.message}`);
+        if (err.message !== "Unauthorized") {
+            showAlert(`Failed to start scouting: ${err.message}`, "System Error");
+        }
         startBtn.disabled = false;
         startBtn.innerHTML = "<span>🚀</span> Start Scouting Batch";
     }
@@ -278,13 +357,8 @@ function startPolling() {
     if (pollInterval) clearInterval(pollInterval);
     pollInterval = setInterval(async () => {
         try {
-            const resp = await fetch(`${API_BASE}/scout/status/${currentJobId}`);
+            const resp = await apiFetch(`${API_BASE}/scout/status/${currentJobId}`);
             if (!resp.ok) {
-                if (resp.status === 401) {
-                    alert("Session expired or unauthorized. Please refresh the page.");
-                    clearInterval(pollInterval);
-                    return;
-                }
                 throw new Error(`Status check failed: ${resp.status}`);
             }
             const job = await resp.json();
@@ -538,7 +612,7 @@ function toggleSelectAll(event) {
 
 async function fetchExports() {
     try {
-        const resp = await fetch(`${API_BASE}/exports`);
+        const resp = await apiFetch(`${API_BASE}/exports`);
         const exports = await resp.json();
         renderLibrary(exports);
     } catch (err) {
@@ -602,7 +676,7 @@ floatingSaveBtn.addEventListener("click", async () => {
     floatingSaveBtn.innerText = "⏳";
 
     try {
-        const resp = await fetch(`${API_BASE}/exports/save`, {
+        const resp = await apiFetch(`${API_BASE}/exports/save`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ filename, csv_data: csvData })
@@ -610,13 +684,15 @@ floatingSaveBtn.addEventListener("click", async () => {
 
         if (resp.ok) {
             fetchExports();
-            alert(`Saved to library: ${filename}`);
+            showAlert(`Saved to library: ${filename}`, "Export Successful");
         } else {
-            alert("Failed to save to library.");
+            showAlert("Failed to save to library.", "Save Error");
         }
     } catch (err) {
         console.error(err);
-        alert("Error saving to library.");
+        if (err.message !== "Unauthorized") {
+            showAlert("Error saving to library.", "System Error");
+        }
     } finally {
         floatingSaveBtn.disabled = false;
         floatingSaveBtn.innerText = "💾";
@@ -663,7 +739,7 @@ function generateCsvContent() {
     }
     
     if (count === 0) {
-        alert("No results to export.");
+        showAlert("No results to export.", "Selection Empty");
         return null;
     }
 
@@ -675,9 +751,9 @@ async function downloadSavedExport(filename) {
 }
 
 async function deleteSavedExport(filename) {
-    if (!confirm(`Delete ${filename}?`)) return;
+    if (!(await showConfirm(`Delete ${filename}?`))) return;
     try {
-        const resp = await fetch(`${API_BASE}/exports/${filename}`, { method: "DELETE" });
+        const resp = await apiFetch(`${API_BASE}/exports/${filename}`, { method: "DELETE" });
         if (resp.ok) fetchExports();
     } catch (err) {
         console.error(err);
@@ -685,9 +761,9 @@ async function deleteSavedExport(filename) {
 }
 
 clearLibBtn.addEventListener("click", async () => {
-    if (!confirm("Are you sure you want to delete ALL saved exports?")) return;
+    if (!(await showConfirm("Are you sure you want to delete ALL saved exports?"))) return;
     try {
-        const resp = await fetch(`${API_BASE}/exports-all`, { method: "DELETE" });
+        const resp = await apiFetch(`${API_BASE}/exports-all`, { method: "DELETE" });
         if (resp.ok) fetchExports();
     } catch (err) {
         console.error(err);
@@ -695,9 +771,9 @@ clearLibBtn.addEventListener("click", async () => {
 });
 
 downloadAllBtn.addEventListener("click", async () => {
-    const resp = await fetch(`${API_BASE}/exports`);
+    const resp = await apiFetch(`${API_BASE}/exports`);
     const exports = await resp.json();
-    if (exports.length === 0) return alert("Library is empty.");
+    if (exports.length === 0) return showAlert("Library is empty.", "Download Error");
     
     // Batch download (browser might block popups, so we do it with delays or just inform)
     for (let i = 0; i < exports.length; i++) {
@@ -709,12 +785,12 @@ downloadAllBtn.addEventListener("click", async () => {
 
 stopBtn.addEventListener("click", async () => {
     if (!currentJobId) return;
-    if (!confirm("Stop current search and discard remaining queries?")) return;
+    if (!(await showConfirm("Stop current search and discard remaining queries?"))) return;
 
     try {
         stopBtn.disabled = true;
         stopBtn.innerText = "Stopping...";
-        const resp = await fetch(`${API_BASE}/scout/stop/${currentJobId}`, { method: "POST" });
+        const resp = await apiFetch(`${API_BASE}/scout/stop/${currentJobId}`, { method: "POST" });
         if (resp.ok) {
             console.log("Job stopped successfully.");
             localStorage.removeItem("scout_current_job_id");
@@ -742,7 +818,7 @@ async function reconnectToJob() {
     if (idDisplay) idDisplay.innerText = `ID: ${savedJobId}`;
 
     try {
-        const resp = await fetch(`${API_BASE}/scout/status/${savedJobId}`);
+        const resp = await apiFetch(`${API_BASE}/scout/status/${savedJobId}`);
         if (resp.ok) {
             const job = await resp.json();
             console.log("Reconnection successful:", job.status);
@@ -787,7 +863,7 @@ async function reconnectToJob() {
 
 async function fetchVersion() {
     try {
-        const resp = await fetch(`${API_BASE}/version`);
+        const resp = await apiFetch(`${API_BASE}/version`);
         const data = await resp.json();
         localVersion = data.version;
         if (appVersionSpan) appVersionSpan.innerText = localVersion;
@@ -836,7 +912,7 @@ async function applyUpdate() {
     updateStatus.innerText = "Pulling latest changes from GitHub...";
 
     try {
-        const resp = await fetch(`${API_BASE}/update`, { method: "POST" });
+        const resp = await apiFetch(`${API_BASE}/update`, { method: "POST" });
         const data = await resp.json();
 
         if (data.status === "success") {
