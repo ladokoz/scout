@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+google-api-python-client
+pyvimeo
+thefuzz
+python-dotenv
+google-genai
+aiohttp
+python-multipart
+pandas
+yt-dlp
+ddgs

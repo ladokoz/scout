@@ -1,0 +1,29 @@
+# Environments
+venv/
+.venv/
+env/
+.env
+
+# Python junk
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Local Application State
+jobs_state.json
+*.log
+scout_results_*.csv
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Temporary workspace files
+scratch/
+deep_debug.py
+test_google.py
+test_web_search.py
+debug_nighthawk.py
+test_final_nighthawk.py
