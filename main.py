@@ -156,9 +156,8 @@ async def get_version():
 @api_router.post("/update")
 async def perform_update():
     try:
-        # Run git pull using absolute path
-        git_path = r"C:\Program Files\Git\cmd\git.exe"
-        result = subprocess.run([git_path, "pull"], capture_output=True, text=True, check=True)
+        # Use generic 'git' command for cross-platform compatibility (Windows/Linux)
+        result = subprocess.run(["git", "pull"], capture_output=True, text=True, check=True)
         return {"status": "success", "output": result.stdout}
     except subprocess.CalledProcessError as e:
         return {"status": "error", "message": str(e), "output": e.stderr}
