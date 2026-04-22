@@ -21,8 +21,8 @@ echo Starting Backend on http://localhost:8001
 echo Opening Frontend...
 echo.
 
-:: Start the frontend in the default browser
-start "" "frontend\index.html"
+:: Start the frontend in the default browser via the server
+start http://localhost:8001
 
 echo NOTE: Ensure the backend stays running in this window.
 echo.

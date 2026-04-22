@@ -13,7 +13,10 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 import yt_dlp
 import vimeo
-from ddgs import DDGS
+try:
+    from ddgs import DDGS
+except ImportError:
+    from duckduckgo_search import DDGS
 
 
 # Load environment variables

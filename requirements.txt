@@ -9,5 +9,4 @@ aiohttp
 python-multipart
 pandas
 yt-dlp
-duckduckgo-search
-
+ddgs

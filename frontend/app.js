@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8001/api";
+const API_BASE = "/api";
 
 // UI Elements
 const filmList = document.getElementById("film-list");
@@ -208,22 +208,41 @@ startBtn.addEventListener("click", async () => {
                 match_algo: filters.matchAlgo
             })
         });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: "Unknown error" }));
+            throw new Error(errorData.detail || `Server returned ${response.status}`);
+        }
+
         const data = await response.json();
-        currentJobId = data.job_id;
-        startPolling();
+        if (data.job_id) {
+            currentJobId = data.job_id;
+            startPolling();
+        } else {
+            throw new Error("No job ID received from server.");
+        }
     } catch (err) {
         console.error(err);
-        alert("Failed to start scouting.");
+        alert(`Failed to start scouting: ${err.message}`);
         startBtn.disabled = false;
         startBtn.innerHTML = "<span>🚀</span> Start Scouting Batch";
     }
 });
 
 function startPolling() {
+    if (!currentJobId) return;
     if (pollInterval) clearInterval(pollInterval);
     pollInterval = setInterval(async () => {
         try {
             const resp = await fetch(`${API_BASE}/scout/status/${currentJobId}`);
+            if (!resp.ok) {
+                if (resp.status === 401) {
+                    alert("Session expired or unauthorized. Please refresh the page.");
+                    clearInterval(pollInterval);
+                    return;
+                }
+                throw new Error(`Status check failed: ${resp.status}`);
+            }
             const job = await resp.json();
             
             updateUI(job);
@@ -256,7 +275,7 @@ function updateUI(job) {
 }
 
 // Visual Helpers
-const NO_THUMB_SVG = `data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='102' viewBox='0 0 180 102'%3E%3Crect width='180' height='102' fill='%231a1d24'/%3E%3Cpath d='M90 35a15 15 0 1 0 15 15 15 15 0 0 0-15-15zm0 25a10 10 0 1 1 10-10 10 10 0 0 1-10 10z' fill='%234a5568'/%3E%3Ctext x='90' y='75' font-family='sans-serif' font-size='10' fill='%234a5568' text-anchor='middle'%3ENo Preview%3C/text%3E%3C/svg%3E`;
+const NO_THUMB_SVG = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22180%22 height=%22102%22 viewBox=%220 0 180 102%22%3E%3Crect width=%22180%22 height=%22102%22 fill=%22%231a1d24%22/%3E%3Cpath d=%22M90 35a15 15 0 1 0 15 15 15 15 0 0 0-15-15zm0 25a10 10 0 1 1 10-10 10 10 0 0 1-10 10z%22 fill=%22%234a5568%22/%3E%3Ctext x=%2290%22 y=%2275%22 font-family=%22sans-serif%22 font-size=%2210%22 fill=%22%234a5568%22 text-anchor=%22middle%22%3ENo Preview%3C/text%3E%3C/svg%3E";
 
 function renderResults(results) {
     let html = `
@@ -314,7 +333,7 @@ function renderResults(results) {
                 <tr class="result-row">
                     <td><span class="platform-chip ${platformClass}">${entry.platform}</span></td>
                     <td>
-                        <img src="${thumbUrl}" class="thumb-img" alt="thumb" onerror="this.src='${NO_THUMB_SVG}'">
+                        <img src="${thumbUrl}" class="thumb-img" alt="thumb" onerror="if(this.src != '${NO_THUMB_SVG}') this.src='${NO_THUMB_SVG}';">
                     </td>
                     <td class="source-cell">
                         <div style="font-weight: 600;">${entry.title}</div>
