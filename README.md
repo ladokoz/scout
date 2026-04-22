@@ -4,17 +4,17 @@
 
 ## Core Features
 
-*   **Deep Scouting Resilience**: Uses a multi-layered search strategy to find "hard-to-reach" films, even when they have restricted metadata or special characters in the title.
+*   **Background Scout Execution**: The discovery engine runs in the background. You can close your browser tab and reopen it later; the scout will continue its work and restore your session automatically.
+*   **Additive Rendering**: New results are added to the dashboard without refreshing the page or reloading existing video embeds. Watch found films while the search continues uninterrupted.
+*   **Search Interruption (Stop Button)**: Full control over batch jobs. Interrupt any active search immediately to start a new one.
+*   **Web-Based Auto-Updater**: Keep your system up-to-date with one click. Integrated version checking and automatic Git-based updates.
 *   **Expert Relevance Engine**: Toggle between **Strict**, **Balanced**, and **Loose** matching algorithms to fine-tune your results in real-time.
 *   **Rollout Details & Playback**: Expand any film entry to see rich metadata (descriptions, uploader details) and play films directly within the dashboard using integrated YouTube/Vimeo players.
-*   **The Cinematic Dashboard**: A premium, dark-mode workspace featuring 180px thumbnails, instant SVG placeholders, and smooth CSS transitions.
 *   **In-App Export Library**: Save your scouting results to a persistent server-side library. Manage, download, or clear your history via a focused modal interface.
-*   **Selective Export**: Cherry-pick specific films using the checkmarking system to export only the results that matter most to you.
 *   **Advanced Discovery Filters**:
     *   **Min Relevance**: Instant noise reduction.
     *   **Duration Control**: Hide teasers/trailers while keeping full shorts.
     *   **Visual Logic**: Hide results without previews based on match confidence.
-*   **Floating Action Logic**: Quick-access floating buttons for saving results and opening the library, keeping primary controls accessible at all times.
 
 ## Technology Stack
 
@@ -27,14 +27,15 @@
 
 ### 1. Prerequisites
 *   Python 3.9 or higher.
+*   Git (required for the Auto-Updater).
 *   YouTube Data API v3 Key.
-*   Vimeo API ClientID/Secret.
+*   Vimeo API ClientID/Secret/AccessToken.
 
 ### 2. Local Setup
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ahub-film-scout.git
-cd ahub-film-scout
+git clone https://github.com/ladokoz/scout.git
+cd scout
 
 # Launch using the automated script
 # (On Windows)
@@ -46,11 +47,27 @@ chmod +x run.sh
 ```
 
 ### 3. Configuration
-Create a `.env` file in the root directory and add your keys:
+Create a `.env` file in the root directory. Below are the required and optional fields:
+
 ```env
+# UI Credentials (for deployment security)
+ADMIN_USERNAME=maros
+ADMIN_PASSWORD=ahub123
+
+# Gemini API (For future AI enhancements)
+GEMINI_API_KEY=your_gemini_key
+
+# YouTube API (Get from Google Cloud Console)
 YOUTUBE_API_KEY=your_youtube_key
+
+# Vimeo API (Get from Vimeo Developer Portal)
 VIMEO_CLIENT_ID=your_vimeo_id
 VIMEO_CLIENT_SECRET=your_vimeo_secret
+VIMEO_ACCESS_TOKEN=your_vimeo_token
+
+# Fallback/Legacy Vimeo Auth (Optional)
+VIMEO_USERNAME=your_email
+VIMEO_PASSWORD=your_password
 ```
 
 ## Deployment
