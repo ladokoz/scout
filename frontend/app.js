@@ -3,12 +3,18 @@ const API_BASE = "/api";
 // UI Elements
 const filmList = document.getElementById("film-list");
 const startBtn = document.getElementById("start-btn");
-const exportBtn = document.getElementById("export-btn");
+const statusText = document.getElementById("status-text");
+const resultsContainer = document.getElementById("results-container");
+const floatingSaveBtn = document.getElementById("floating-save-btn");
+const openLibBtn = document.getElementById("open-lib-btn");
+const closeLibBtn = document.getElementById("close-lib-btn");
+const libraryModal = document.getElementById("library-modal");
+const libraryContainer = document.getElementById("library-container");
+const downloadAllBtn = document.getElementById("download-all-btn");
+const clearLibBtn = document.getElementById("clear-lib-btn");
 const progressContainer = document.getElementById("progress-container");
 const progressFill = document.getElementById("progress-fill");
 const percentText = document.getElementById("percent-text");
-const statusText = document.getElementById("status-text");
-const resultsContainer = document.getElementById("results-container");
 
 // Filter Elements
 const filterMinRelevance = document.getElementById("filter-min-relevance");
@@ -42,6 +48,7 @@ let filters = {
     hideNoThumb: false,
     thumbOverride: 20
 };
+let selectedUrls = new Set();
 
 // --- Initialization & LocalStorage ---
 
@@ -197,6 +204,8 @@ startBtn.addEventListener("click", async () => {
     progressContainer.style.display = "block";
     resultsContainer.innerHTML = '<div class="empty-state">Synthesizing deep discovery sweep...</div>';
     latestResults = {};
+    selectedUrls.clear();
+    floatingSaveBtn.disabled = true;
 
     try {
         const response = await fetch(`${API_BASE}/scout/batch`, {
@@ -251,7 +260,7 @@ function startPolling() {
                 clearInterval(pollInterval);
                 startBtn.disabled = false;
                 startBtn.innerHTML = "<span>🚀</span> Start Scouting Batch";
-                exportBtn.disabled = false;
+                floatingSaveBtn.disabled = false;
             }
         } catch (err) {
             console.error("Polling error:", err);
@@ -282,6 +291,7 @@ function renderResults(results) {
         <table class="results-table">
             <thead>
                 <tr>
+                    <th style="width: 40px;"><input type="checkbox" id="select-all-checkbox" onclick="toggleSelectAll(event)"></th>
                     <th>Platform</th>
                     <th>Preview</th>
                     <th>Result Title</th>
@@ -289,6 +299,7 @@ function renderResults(results) {
                     <th>Length</th>
                     <th>Relevance</th>
                     <th>Action</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -316,7 +327,7 @@ function renderResults(results) {
         // Group Header
         html += `
             <tr class="group-header">
-                <td colspan="7">
+                <td colspan="9">
                     <div style="font-weight: 800; font-size: 1.1rem; color: var(--primary);">Query: ${query}</div>
                 </td>
             </tr>
@@ -326,11 +337,17 @@ function renderResults(results) {
             const scoreClass = entry.match_score > 85 ? 'match-high' : 'match-mid';
             const platformClass = entry.platform === 'YouTube' ? 'platform-youtube' : 'platform-vimeo';
             
+            // Unique ID for toggle logic
+            const safeId = btoa(entry.url).replace(/[^a-z0-9]/gi, '');
+            
             // Use local SVG placeholder for instant loading
             const thumbUrl = (entry.thumbnail && entry.thumbnail.startsWith('http')) ? entry.thumbnail : NO_THUMB_SVG;
 
             html += `
-                <tr class="result-row">
+                <tr class="result-row" id="row-${safeId}" onclick="toggleDetails('${safeId}')" style="cursor: pointer;">
+                    <td onclick="event.stopPropagation()">
+                        <input type="checkbox" class="entry-checkbox" data-url="${entry.url}" ${selectedUrls.has(entry.url) ? 'checked' : ''} onchange="toggleSelect('${entry.url}')">
+                    </td>
                     <td><span class="platform-chip ${platformClass}">${entry.platform}</span></td>
                     <td>
                         <img src="${thumbUrl}" class="thumb-img" alt="thumb" onerror="if(this.src != '${NO_THUMB_SVG}') this.src='${NO_THUMB_SVG}';">
@@ -344,7 +361,32 @@ function renderResults(results) {
                         <div class="match-score ${scoreClass}">${entry.match_score}%</div>
                     </td>
                     <td>
-                        <a href="${entry.url}" target="_blank" class="link-btn">Open Link</a>
+                        <a href="${entry.url}" target="_blank" class="link-btn" onclick="event.stopPropagation()">Open Link</a>
+                    </td>
+                    <td>
+                        <div class="expand-toggle">▼</div>
+                    </td>
+                </tr>
+                <tr id="details-${safeId}" class="detail-row">
+                    <td colspan="9">
+                        <div class="detail-content">
+                            <div class="player-wrapper">
+                                ${getEmbedHtml(entry)}
+                            </div>
+                            <div class="meta-details">
+                                <h3 style="margin-bottom: 0.5rem; color: var(--text-main);">${entry.title}</h3>
+                                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                                    <span style="font-size: 0.8rem; color: var(--secondary); font-weight: 600;">@${entry.uploader}</span>
+                                    <span style="font-size: 0.8rem; color: var(--text-dim);">${entry.platform} • ${entry.duration}</span>
+                                </div>
+                                <div class="description-text">${entry.description || 'No description available.'}</div>
+                                <div style="margin-top: auto; display: flex; gap: 1rem;">
+                                    <a href="${entry.url}" target="_blank" class="btn" style="padding: 0.5rem 1rem; font-size: 0.8rem;" onclick="event.stopPropagation()">
+                                        🔗 Visit Original Page
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -362,27 +404,233 @@ function renderResults(results) {
     resultsContainer.innerHTML = html;
 }
 
-exportBtn.addEventListener("click", () => {
-    const rows = [["Query", "Platform", "Result Title", "Uploader", "URL", "Score", "Duration"]];
+function toggleDetails(id) {
+    const detailRow = document.getElementById(`details-${id}`);
+    const mainRow = document.getElementById(`row-${id}`);
     
-    // Only export what is currently shown based on filters
+    if (detailRow.classList.contains('expanded')) {
+        detailRow.classList.remove('expanded');
+        mainRow.classList.remove('active');
+    } else {
+        // Close other expanded rows if desired (optional)
+        // document.querySelectorAll('.detail-row.expanded').forEach(el => el.classList.remove('expanded'));
+        // document.querySelectorAll('.result-row.active').forEach(el => el.classList.remove('active'));
+
+        detailRow.classList.add('expanded');
+        mainRow.classList.add('active');
+    }
+}
+
+function getEmbedHtml(entry) {
+    let url = entry.url;
+    if (entry.platform.includes('YouTube')) {
+        const ytMatch = url.match(/(?:v=|\/|embed\/|v\/|shorts\/)([a-zA-Z0-9_-]{11})/);
+        if (ytMatch) {
+            return `<iframe src="https://www.youtube.com/embed/${ytMatch[1]}" allowfullscreen allow="autoplay; encrypted-media"></iframe>`;
+        }
+    } else if (entry.platform.includes('Vimeo')) {
+        const vMatch = url.match(/\/(\d+)(?:\/|\?|$)/);
+        if (vMatch) {
+            return `<iframe src="https://player.vimeo.com/video/${vMatch[1]}" allowfullscreen allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
+        }
+    }
+    return `<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-dim);">Embedding not supported for this link.</div>`;
+}
+
+function toggleSelect(url) {
+    if (selectedUrls.has(url)) {
+        selectedUrls.delete(url);
+    } else {
+        selectedUrls.add(url);
+    }
+}
+
+function toggleSelectAll(event) {
+    event.stopPropagation();
+    const checked = event.target.checked;
+    const checkboxes = document.querySelectorAll('.entry-checkbox');
+    
+    checkboxes.forEach(cb => {
+        cb.checked = checked;
+        const url = cb.getAttribute('data-url');
+        if (checked) selectedUrls.add(url);
+        else selectedUrls.delete(url);
+    });
+}
+
+// --- Library Management ---
+
+async function fetchExports() {
+    try {
+        const resp = await fetch(`${API_BASE}/exports`);
+        const exports = await resp.json();
+        renderLibrary(exports);
+    } catch (err) {
+        console.error("Failed to fetch exports", err);
+    }
+}
+
+function renderLibrary(exports) {
+    if (!exports || exports.length === 0) {
+        libraryContainer.innerHTML = '<div class="empty-state" style="padding: 2rem;">Library is empty.</div>';
+        return;
+    }
+
+    let html = `
+        <table class="results-table" style="margin-top: 0;">
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Saved Date</th>
+                    <th>Size</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    exports.forEach(exp => {
+        const date = new Date(exp.created * 1000).toLocaleString();
+        const size = (exp.size / 1024).toFixed(1) + " KB";
+        html += `
+            <tr class="result-row">
+                <td style="font-weight: 600;">${exp.name}</td>
+                <td style="color: var(--text-dim); font-size: 0.85rem;">${date}</td>
+                <td style="color: var(--text-dim); font-size: 0.85rem;">${size}</td>
+                <td style="text-align: right;">
+                    <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                        <button onclick="downloadSavedExport('${exp.name}')" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background: var(--border);">
+                            📥
+                        </button>
+                        <button onclick="deleteSavedExport('${exp.name}')" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                            🗑️
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `</tbody></table>`;
+    libraryContainer.innerHTML = html;
+}
+
+floatingSaveBtn.addEventListener("click", async () => {
+    const csvData = generateCsvContent();
+    if (!csvData) return;
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const filename = `scout_export_${timestamp}.csv`;
+
+    floatingSaveBtn.disabled = true;
+    floatingSaveBtn.innerText = "⏳";
+
+    try {
+        const resp = await fetch(`${API_BASE}/exports/save`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filename, csv_data: csvData })
+        });
+
+        if (resp.ok) {
+            fetchExports();
+            alert(`Saved to library: ${filename}`);
+        } else {
+            alert("Failed to save to library.");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Error saving to library.");
+    } finally {
+        floatingSaveBtn.disabled = false;
+        floatingSaveBtn.innerText = "💾";
+    }
+});
+
+openLibBtn.addEventListener("click", () => {
+    libraryModal.classList.add("active");
+    fetchExports();
+});
+
+closeLibBtn.addEventListener("click", () => {
+    libraryModal.classList.remove("active");
+});
+
+// Close modal when clicking outside
+window.addEventListener("click", (e) => {
+    if (e.target === libraryModal) {
+        libraryModal.classList.remove("active");
+    }
+});
+
+function generateCsvContent() {
+    const rows = [["Query", "Platform", "Result Title", "Uploader", "URL", "Score", "Duration"]];
+    const useSelection = selectedUrls.size > 0;
+    
+    let count = 0;
     for (const [query, entries] of Object.entries(latestResults)) {
         entries.forEach(e => {
-            if (!e.error && shouldShow(e)) {
+            if (e.error) return;
+            const isSelected = selectedUrls.has(e.url);
+            const isVisible = shouldShow(e);
+            
+            if (useSelection) {
+                if (isSelected) {
+                    rows.push([query, e.platform, e.title, e.uploader, e.url, e.match_score, e.duration]);
+                    count++;
+                }
+            } else if (isVisible) {
                 rows.push([query, e.platform, e.title, e.uploader, e.url, e.match_score, e.duration]);
+                count++;
             }
         });
     }
     
-    const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `ahub_scout_filtered_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (count === 0) {
+        alert("No results to export.");
+        return null;
+    }
+
+    return rows.map(e => e.join(",")).join("\n");
+}
+
+async function downloadSavedExport(filename) {
+    window.open(`${API_BASE}/exports/download/${filename}`, '_blank');
+}
+
+async function deleteSavedExport(filename) {
+    if (!confirm(`Delete ${filename}?`)) return;
+    try {
+        const resp = await fetch(`${API_BASE}/exports/${filename}`, { method: "DELETE" });
+        if (resp.ok) fetchExports();
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+clearLibBtn.addEventListener("click", async () => {
+    if (!confirm("Are you sure you want to delete ALL saved exports?")) return;
+    try {
+        const resp = await fetch(`${API_BASE}/exports-all`, { method: "DELETE" });
+        if (resp.ok) fetchExports();
+    } catch (err) {
+        console.error(err);
+    }
+});
+
+downloadAllBtn.addEventListener("click", async () => {
+    const resp = await fetch(`${API_BASE}/exports`);
+    const exports = await resp.json();
+    if (exports.length === 0) return alert("Library is empty.");
+    
+    // Batch download (browser might block popups, so we do it with delays or just inform)
+    for (let i = 0; i < exports.length; i++) {
+        setTimeout(() => {
+            downloadSavedExport(exports[i].name);
+        }, i * 500);
+    }
 });
 
 // Run on boot
 loadSettings();
+fetchExports();

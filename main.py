@@ -44,6 +44,11 @@ def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
 engine = ScoutEngine()
 jobs: Dict[str, Dict] = {}
 DATA_FILE = "jobs_state.json"
+EXPORTS_DIR = "exports"
+
+# Ensure exports directory exists
+if not os.path.exists(EXPORTS_DIR):
+    os.makedirs(EXPORTS_DIR)
 
 def save_state():
     with open(DATA_FILE, "w") as f:
@@ -85,6 +90,10 @@ class BatchRequest(BaseModel):
     queries: List[str]
     search_limit: int = 15
     match_algo: str = "loose"
+
+class SaveExportRequest(BaseModel):
+    filename: str
+    csv_data: str
 
 async def run_batch_scout(job_id: str, queries: List[str], search_limit: int, match_algo: str):
     jobs[job_id]["status"] = "processing"
@@ -136,6 +145,70 @@ async def stop_job(job_id: str):
         save_state()
         return {"status": "stopped"}
     raise HTTPException(status_code=404, detail="Job not found")
+
+# --- Export Management Endpoints ---
+
+@app.post("/api/exports/save")
+async def save_export(request: SaveExportRequest):
+    try:
+        # Ensure filename is safe
+        safe_name = "".join([c for c in request.filename if c.isalnum() or c in "._- "]).strip()
+        if not safe_name.endswith(".csv"):
+            safe_name += ".csv"
+        
+        file_path = os.path.join(EXPORTS_DIR, safe_name)
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(request.csv_data)
+        
+        return {"status": "saved", "filename": safe_name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/exports")
+async def list_exports():
+    if not os.path.exists(EXPORTS_DIR):
+        return []
+    
+    files = []
+    for filename in os.listdir(EXPORTS_DIR):
+        if filename.endswith(".csv"):
+            path = os.path.join(EXPORTS_DIR, filename)
+            stats = os.stat(path)
+            files.append({
+                "name": filename,
+                "size": stats.st_size,
+                "created": stats.st_mtime
+            })
+    
+    # Sort by created date (newest first)
+    files.sort(key=lambda x: x["created"], reverse=True)
+    return files
+
+@app.get("/api/exports/download/{filename}")
+async def download_export(filename: str):
+    file_path = os.path.join(EXPORTS_DIR, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(file_path, media_type='text/csv', filename=filename)
+
+@app.delete("/api/exports/{filename}")
+async def delete_export(filename: str):
+    file_path = os.path.join(EXPORTS_DIR, filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        return {"status": "deleted"}
+    raise HTTPException(status_code=404, detail="File not found")
+
+@app.delete("/api/exports-all")
+async def delete_all_exports():
+    try:
+        for filename in os.listdir(EXPORTS_DIR):
+            file_path = os.path.join(EXPORTS_DIR, filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+        return {"status": "all_deleted"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")
 async def read_index():

@@ -14,7 +14,9 @@
                 <h1>Ahub Film Scout</h1>
                 <p style="color: var(--text-dim);">Elegant Parallel Discovery & AI Verification</p>
             </div>
-            <div id="api-status"></div>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <div id="api-status"></div>
+            </div>
         </header>
 
         <aside class="sidebar">
@@ -121,9 +123,6 @@
             <section class="card results-section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                     <h2 style="font-size: 1.25rem;">Discovered Links</h2>
-                    <button id="export-btn" class="btn" style="padding: 0.5rem 1rem; font-size: 0.85rem;" disabled>
-                        📥 Export CSV
-                    </button>
                 </div>
                 
                 <div id="results-container">
@@ -133,6 +132,40 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- Floating Action Button -->
+    <!-- Floating Action Buttons -->
+    <div class="fab-group">
+        <button id="open-lib-btn" class="fab secondary" title="Open Library">
+            📚
+        </button>
+        <button id="floating-save-btn" class="fab" disabled title="Save to Library">
+            💾
+        </button>
+    </div>
+
+    <!-- Library Modal -->
+    <div id="library-modal" class="modal">
+        <div class="modal-content card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.5rem;">Saved Export Library</h2>
+                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                    <button id="download-all-btn" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; background: var(--border);">
+                        📦 Download All
+                    </button>
+                    <button id="clear-lib-btn" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">
+                        🗑️ Clear All
+                    </button>
+                    <button id="close-lib-btn" class="btn-icon" style="margin-left: 0.5rem;">✕</button>
+                </div>
+            </div>
+            <div id="library-container">
+                <div class="empty-state" style="padding: 2rem;">
+                    Library is empty.
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="app.js"></script>

@@ -35,6 +35,7 @@ class ScoutResult:
     uploader: str
     duration: str
     match_score: int
+    description: str = ""
 
 class ScoutEngine:
     def __init__(self):
@@ -192,7 +193,8 @@ class ScoutEngine:
                 thumbnail=snippet['thumbnails']['default']['url'],
                 uploader=snippet['channelTitle'],
                 duration=duration_map.get(vid_id, "0:00"),
-                match_score=0
+                match_score=0,
+                description=snippet.get('description', '')
             ))
         return results
 
@@ -264,7 +266,8 @@ class ScoutEngine:
                 thumbnail=thumb,
                 uploader=uploader,
                 duration=self.format_duration_sec(video.get('duration', 0)),
-                match_score=0
+                match_score=0,
+                description=video.get('description', '')
             ))
             
         return scout_results
@@ -301,7 +304,8 @@ class ScoutEngine:
                             thumbnail=thumb,
                             uploader=entry.get('uploader', 'Unknown'),
                             duration=self.format_duration_sec(entry.get('duration', 0)),
-                            match_score=0
+                            match_score=0,
+                            description=entry.get('description', '')
                         ))
                 return scout_results
             except Exception as e:
@@ -426,7 +430,8 @@ class ScoutEngine:
                 thumbnail=thumb,
                 uploader=info.get('uploader', 'Unknown'),
                 duration=self.format_duration_sec(info.get('duration', 0)) if info.get('duration') else fallback_duration,
-                match_score=0
+                match_score=0,
+                description=info.get('description', '')
             )
         except Exception as e:
             logger.debug(f"Deep enrichment failed for {url}: {e}. Falling back to basic data.")
@@ -438,7 +443,8 @@ class ScoutEngine:
                 thumbnail=fallback_thumb,
                 uploader="See Link",
                 duration=fallback_duration,
-                match_score=0
+                match_score=0,
+                description=""
             )
 
     def _sync_extract_info(self, url: str) -> Dict:
