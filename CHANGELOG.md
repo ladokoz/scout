@@ -2,6 +2,19 @@
 
 All notable changes to the **Ahub Film Scout** project will be documented in this file.
 
+## [1.2.1] - 2026-04-22
+
+### Added
+- **Background Scout Persistence**: Implemented a job-based background system that allows the scouting process to continue after the browser is closed.
+- **Session Reconnection**: Frontend now uses `localStorage` to reconnect to active scouting sessions upon page refresh.
+- **Search Interruption Control**: Added a "Stop" button to the UI to safely abort active batch jobs.
+- **Additive Rendering Logic**: Refactored the dashboard to append new results dynamically, preventing video embeds from reloading during ongoing searches.
+- **Integrated Auto-Updater**: Added a version tracking system and a web-based UI to pull updates from GitHub directly via the dashboard.
+
+### Improved
+- **Robust API Detection**: Enhanced the frontend to automatically detect the correct backend origin, even across different ports.
+- **State Reconciliation**: Improved the sync logic between backend job states and frontend UI components.
+
 ## [1.2.0] - 2026-04-22
 
 ### Added
