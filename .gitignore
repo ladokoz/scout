@@ -14,6 +14,7 @@ __pycache__/
 # Local Application State
 jobs_state.json
 *.log
+TODO.md
 scout_results_*.csv
 
 # OS specific files
