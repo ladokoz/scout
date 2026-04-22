@@ -13,6 +13,7 @@ __pycache__/
 
 # Local Application State
 jobs_state.json
+exports/
 *.log
 TODO.md
 scout_results_*.csv
