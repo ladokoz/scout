@@ -900,7 +900,8 @@ async function checkForUpdates() {
     try {
         // In a real scenario, you'd fetch from GitHub. 
         // For now, we simulate or try the fetch.
-        const resp = await fetch(REMOTE_VERSION_URL);
+        // Add a cache-buster to bypass GitHub's raw content CDN cache
+        const resp = await fetch(REMOTE_VERSION_URL + "?t=" + Date.now());
         if (!resp.ok) throw new Error("Could not reach update server.");
         
         const remoteVersion = (await resp.text()).trim();
