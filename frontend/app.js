@@ -747,10 +747,21 @@ function generateCsvContent() {
 }
 
 async function downloadSavedExport(filename) {
-    console.log("DEBUG: downloadSavedExport called for", filename);
+    const downloadUrl = `${API_BASE}/exports/download/${encodeURIComponent(filename)}`;
+    console.log("DEBUG: Attempting download:", downloadUrl);
+    
+    const auth = localStorage.getItem("scout_auth");
+    console.log("DEBUG: Auth present in localStorage:", !!auth);
+
     try {
-        const resp = await apiFetch(`${API_BASE}/exports/download/${filename}`);
-        if (!resp.ok) throw new Error("Download failed");
+        const resp = await apiFetch(downloadUrl);
+        console.log("DEBUG: Download response status:", resp.status);
+        
+        if (!resp.ok) {
+            const errorText = await resp.text();
+            console.error("DEBUG: Download failed details:", errorText);
+            throw new Error("Download failed with status " + resp.status);
+        }
         
         const blob = await resp.blob();
         const url = window.URL.createObjectURL(blob);
@@ -762,10 +773,11 @@ async function downloadSavedExport(filename) {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+        console.log("DEBUG: Download triggered successfully");
     } catch (err) {
-        console.error(err);
+        console.error("DEBUG: Download Catch Error:", err);
         if (err.message !== "Unauthorized") {
-            showAlert("Failed to download file.", "Download Error");
+            showAlert("Failed to download file: " + err.message, "Download Error");
         }
     }
 }
