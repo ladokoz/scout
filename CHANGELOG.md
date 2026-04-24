@@ -2,6 +2,11 @@
 
 All notable changes to the **Ahub Film Scout** project will be documented in this file.
 
+## [1.2.3] - 2026-04-24
+
+### Fixed
+- **CSV Download Authentication**: Resolved the "Authentication required" error by transitioning from native browser downloads to authenticated fetch-and-blob downloads. This ensures credentials are correctly passed when exporting from the library.
+
 ## [1.2.2] - 2026-04-22
 
 ### Added
