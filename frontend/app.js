@@ -747,7 +747,26 @@ function generateCsvContent() {
 }
 
 async function downloadSavedExport(filename) {
-    window.open(`${API_BASE}/exports/download/${filename}`, '_blank');
+    try {
+        const resp = await apiFetch(`${API_BASE}/exports/download/${filename}`);
+        if (!resp.ok) throw new Error("Download failed");
+        
+        const blob = await resp.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    } catch (err) {
+        console.error(err);
+        if (err.message !== "Unauthorized") {
+            showAlert("Failed to download file.", "Download Error");
+        }
+    }
 }
 
 async function deleteSavedExport(filename) {
