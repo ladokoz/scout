@@ -747,6 +747,7 @@ function generateCsvContent() {
 }
 
 async function downloadSavedExport(filename) {
+    console.log("DEBUG: downloadSavedExport called for", filename);
     try {
         const resp = await apiFetch(`${API_BASE}/exports/download/${filename}`);
         if (!resp.ok) throw new Error("Download failed");
